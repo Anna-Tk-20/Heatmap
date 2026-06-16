@@ -1,0 +1,142 @@
+
+<h2 class="sr-only">Approval bottlenecks heatmap showing average hours spent per workflow stage over the past six weeks</h2>
+
+<style>
+  .hm-wrap { padding: 1rem 0; font-family: var(--font-sans); }
+  .hm-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 4px 0; letter-spacing: 0.03em; }
+  .hm-subtitle { font-size: 11px; color: var(--color-text-tertiary); margin: 0 0 20px 0; }
+  .hm-grid-wrap { display: grid; grid-template-columns: 148px 1fr; gap: 0; }
+  .hm-stage-labels { display: flex; flex-direction: column; gap: 3px; padding-top: 22px; }
+  .hm-stage-label { height: 38px; display: flex; align-items: center; font-size: 11px; color: var(--color-text-secondary); padding-right: 10px; text-align: right; justify-content: flex-end; line-height: 1.3; }
+  .hm-right { display: flex; flex-direction: column; gap: 0; }
+  .hm-week-headers { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-bottom: 3px; }
+  .hm-week-header { font-size: 10px; color: var(--color-text-tertiary); text-align: center; padding-bottom: 6px; }
+  .hm-rows { display: flex; flex-direction: column; gap: 3px; }
+  .hm-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .hm-cell { height: 38px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; cursor: default; transition: opacity 0.15s; position: relative; }
+  .hm-cell:hover { opacity: 0.82; }
+  .hm-legend { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+  .hm-legend-label { font-size: 11px; color: var(--color-text-tertiary); }
+  .hm-legend-track { display: flex; gap: 2px; }
+  .hm-legend-swatch { width: 20px; height: 10px; border-radius: 2px; }
+  .hm-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; }
+  .hm-metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+  .hm-metric-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); line-height: 1; margin-bottom: 4px; }
+  .hm-metric-lbl { font-size: 11px; color: var(--color-text-secondary); }
+</style>
+
+<div class="hm-wrap">
+  <p class="hm-title">Approval bottlenecks — avg. hours per stage</p>
+  <p class="hm-subtitle">Business mission requests · weeks 20–25, 2026</p>
+
+  <div class="hm-grid-wrap">
+    <div class="hm-stage-labels">
+      <div class="hm-stage-label">Pending approval</div>
+      <div class="hm-stage-label">Clarification required</div>
+      <div class="hm-stage-label">Approved → flight options</div>
+      <div class="hm-stage-label">Flight options sent</div>
+      <div class="hm-stage-label">Option confirmed</div>
+      <div class="hm-stage-label">Ticket booked</div>
+    </div>
+
+    <div class="hm-right">
+      <div class="hm-week-headers">
+        <div class="hm-week-header">Wk 20</div>
+        <div class="hm-week-header">Wk 21</div>
+        <div class="hm-week-header">Wk 22</div>
+        <div class="hm-week-header">Wk 23</div>
+        <div class="hm-week-header">Wk 24</div>
+        <div class="hm-week-header">Wk 25</div>
+      </div>
+      <div class="hm-rows" id="hm-rows"></div>
+    </div>
+  </div>
+
+  <div class="hm-legend">
+    <span class="hm-legend-label">On target</span>
+    <div class="hm-legend-track" id="hm-legend"></div>
+    <span class="hm-legend-label">Delayed</span>
+  </div>
+
+  <div class="hm-summary">
+    <div class="hm-metric">
+      <div class="hm-metric-val" id="m-worst-stage">—</div>
+      <div class="hm-metric-lbl">Biggest bottleneck</div>
+    </div>
+    <div class="hm-metric">
+      <div class="hm-metric-val" id="m-worst-val">—</div>
+      <div class="hm-metric-lbl">Peak avg. hours (worst week)</div>
+    </div>
+    <div class="hm-metric">
+      <div class="hm-metric-val" id="m-sla">72%</div>
+      <div class="hm-metric-lbl">Requests within SLA target</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const stages = [
+  'Pending approval',
+  'Clarification required',
+  'Approved → flight options',
+  'Flight options sent',
+  'Option confirmed',
+  'Ticket booked'
+];
+
+const data = [
+  [3.1, 4.2, 3.8, 5.1, 4.6, 3.3],
+  [19.4, 22.1, 15.7, 28.3, 31.6, 18.9],
+  [6.2, 5.8, 7.4, 6.1, 8.2, 5.5],
+  [4.8, 6.3, 5.1, 7.2, 4.9, 6.8],
+  [2.1, 2.4, 1.9, 3.1, 2.7, 2.0],
+  [1.8, 2.1, 1.6, 2.4, 1.9, 2.2]
+];
+
+const thresholds = [8, 24, 12, 10, 6, 5];
+
+function cellColor(val, threshold) {
+  const ratio = val / threshold;
+  if (ratio <= 0.4) return { bg: '#1D9E75', text: '#04342C' };
+  if (ratio <= 0.65) return { bg: '#5DCAA5', text: '#085041' };
+  if (ratio <= 0.85) return { bg: '#c0dd97', text: '#3B6D11' };
+  if (ratio <= 1.0)  return { bg: '#FAC775', text: '#633806' };
+  if (ratio <= 1.3)  return { bg: '#EF9F27', text: '#412402' };
+  if (ratio <= 1.6)  return { bg: '#E24B4A', text: '#501313' };
+  return { bg: '#A32D2D', text: '#FCEBEB' };
+}
+
+const rowsEl = document.getElementById('hm-rows');
+
+let worstVal = 0;
+let worstStage = '';
+
+data.forEach((row, si) => {
+  const rowEl = document.createElement('div');
+  rowEl.className = 'hm-row';
+  row.forEach((val, wi) => {
+    const c = cellColor(val, thresholds[si]);
+    const cell = document.createElement('div');
+    cell.className = 'hm-cell';
+    cell.style.background = c.bg;
+    cell.style.color = c.text;
+    cell.textContent = val.toFixed(1) + 'h';
+    cell.title = stages[si] + ' – Week ' + (20 + wi) + ': ' + val.toFixed(1) + ' hrs';
+    rowEl.appendChild(cell);
+    if (val > worstVal) { worstVal = val; worstStage = stages[si]; }
+  });
+  rowsEl.appendChild(rowEl);
+});
+
+document.getElementById('m-worst-stage').textContent = 'Clarification';
+document.getElementById('m-worst-val').textContent = worstVal.toFixed(1) + ' hrs';
+
+const legendColors = ['#1D9E75','#5DCAA5','#c0dd97','#FAC775','#EF9F27','#E24B4A','#A32D2D'];
+const legendEl = document.getElementById('hm-legend');
+legendColors.forEach(c => {
+  const s = document.createElement('div');
+  s.className = 'hm-legend-swatch';
+  s.style.background = c;
+  legendEl.appendChild(s);
+});
+</script>

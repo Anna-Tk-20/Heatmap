@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postcode coverage map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #ffffff; }
+  body {
+    font-family: "Golos Text", "Roboto", "Segoe UI", Arial, sans-serif;
+    color: #33333c;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    display: flex;
+    height: 100%;
+    min-height: 380px;
+  }
+  .map-pane {
+    flex: 1 1 62%;
+    position: relative;
+    padding: 8px 0 8px 8px;
+  }
+  .map-pane svg { width: 100%; height: 100%; display: block; }
+  .side-pane {
+    flex: 1 1 38%;
+    max-width: 300px;
+    border-left: 1px solid #e8e8ed;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .side-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #33333c;
+  }
+  .side-sub { font-size: 12px; color: #8f8f9b; margin-top: -8px; }
+  .status-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 10px;
+    letter-spacing: .2px;
+  }
+  .rows { display: flex; flex-direction: column; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f4;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: #8f8f9b; font-size: 12px; }
+  .row .v { font-weight: 600; font-size: 13px; color: #33333c; }
+  .row .v.alert { color: #d94a45; }
+  .row .v.warn { color: #c07b12; }
+  .legend {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f4;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    font-size: 11px;
+    color: #8f8f9b;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .cluster { cursor: pointer; }
+  .cluster circle.bubble { transition: stroke-width .15s ease, r .15s ease; }
+  .cluster:hover circle.bubble { stroke-width: 3; }
+  .cluster.selected circle.bubble { stroke-width: 3.5; }
+  .cluster text { pointer-events: none; }
+  .cluster-label {
+    font-family: "Golos Text", "Roboto", Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    fill: #33333c;
+  }
+  .cluster-count {
+    font-family: "Golos Text", "Roboto", Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .map-title {
+    font-family: "Golos Text", "Roboto", Arial, sans-serif;
+    font-size: 11px;
+    fill: #b6b6c0;
+    letter-spacing: .4px;
+  }
+  @media (max-width: 560px) {
+    .wrap { flex-direction: column; }
+    .side-pane { max-width: none; border-left: none; border-top: 1px solid #e8e8ed; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="map-pane">
+    <svg viewBox="0 0 460 400" role="img" aria-label="Northwest territory postcode coverage map">
+      <title>Postcode coverage — Northwest territory</title>
+      <!-- stylized Lancashire coastline: Morecambe Bay top, Fylde coast, Ribble estuary -->
+      <path d="M 118 26
+               C 100 42, 96 66, 106 84
+               C 84 92, 66 108, 74 128
+               C 52 138, 44 160, 58 176
+               C 42 192, 40 214, 56 228
+               C 48 250, 54 272, 74 284
+               C 66 306, 78 330, 102 338
+               C 100 356, 116 372, 140 374
+               L 430 374 L 430 26 Z"
+            fill="#f7f8fa" stroke="#e4e6ec" stroke-width="1.5"/>
+      <!-- Ribble estuary notch -->
+      <path d="M 56 228 C 84 222, 112 224, 132 232 C 112 240, 84 242, 56 228 Z"
+            fill="#ffffff" stroke="#e4e6ec" stroke-width="1.2"/>
+      <text class="map-title" x="336" y="46">NORTHWEST</text>
+      <text class="map-title" x="336" y="60">TERRITORY</text>
+      <g id="clusters"></g>
+    </svg>
+  </div>
+  <div class="side-pane">
+    <div class="side-title" id="d-name">Preston</div>
+    <div class="side-sub" id="d-postcode">PR postcodes</div>
+    <div><span class="status-chip" id="d-status">Red</span></div>
+    <div class="rows">
+      <div class="row"><span class="k">Accounts in cluster</span><span class="v" id="d-accounts">12</span></div>
+      <div class="row"><span class="k">Tier 1 overdue (30d)</span><span class="v alert" id="d-t1">2</span></div>
+      <div class="row"><span class="k">Tier 2 overdue (60d)</span><span class="v warn" id="d-t2">3</span></div>
+      <div class="row"><span class="k">Demand units (CEA)</span><span class="v" id="d-demand">14</span></div>
+      <div class="row"><span class="k">Open opportunity value</span><span class="v" id="d-opp">£238,000</span></div>
+      <div class="row"><span class="k">Replacement-window assets</span><span class="v" id="d-assets">2</span></div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#d94a45"></span>Tier 1 gap — no visit 30d</span>
+      <span><span class="dot" style="background:#f0a11c"></span>Tier 2 gap — no visit 60d</span>
+      <span><span class="dot" style="background:#4caf6e"></span>Covered</span>
+      <span><span class="dot" style="background:#b8bcc6"></span>Lower priority</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   EDIT DEMO DATA HERE — one object per postcode cluster.
+   x,y = position on the 460x400 map. status: red|amber|green|grey
+   ============================================================ */
+var CLUSTERS = [
+  { name: "Lancaster", postcode: "LA postcodes", x: 148, y: 84,  status: "red",
+    accounts: 11, t1Overdue: 1, t2Overdue: 2, demand: 11, oppValue: "£92,500",  rwAssets: 1 },
+  { name: "Blackpool", postcode: "FY postcodes", x: 108, y: 196, status: "green",
+    accounts: 18, t1Overdue: 0, t2Overdue: 0, demand: 6,  oppValue: "£164,300", rwAssets: 0 },
+  { name: "Preston",   postcode: "PR postcodes", x: 208, y: 208, status: "red",
+    accounts: 12, t1Overdue: 2, t2Overdue: 3, demand: 14, oppValue: "£238,000", rwAssets: 2 },
+  { name: "Burnley",   postcode: "BB postcodes", x: 322, y: 176, status: "amber",
+    accounts: 12, t1Overdue: 0, t2Overdue: 1, demand: 9,  oppValue: "£122,800", rwAssets: 1 },
+  { name: "Wigan",     postcode: "WN postcodes", x: 248, y: 318, status: "amber",
+    accounts: 13, t1Overdue: 0, t2Overdue: 1, demand: 7,  oppValue: "£58,900",  rwAssets: 0 }
+];
+var DEFAULT_SELECTED = "Preston";
+
+var STATUS = {
+  red:   { fill: "#d94a45", tint: "rgba(217,74,69,.14)",  chipBg: "#fdecec", chipFg: "#a32d2d", label: "Red — coverage gap" },
+  amber: { fill: "#f0a11c", tint: "rgba(240,161,28,.15)", chipBg: "#fdf3e0", chipFg: "#8a5a08", label: "Amber — falling behind" },
+  green: { fill: "#4caf6e", tint: "rgba(76,175,110,.14)", chipBg: "#e9f5ec", chipFg: "#2e6b45", label: "Green — covered" },
+  grey:  { fill: "#b8bcc6", tint: "rgba(184,188,198,.18)",chipBg: "#f0f0f4", chipFg: "#5f5f6b", label: "Grey — lower priority" }
+};
+
+function bubbleRadius(demand) { return 14 + demand * 1.6; }
+
+var svgNS = "http://www.w3.org/2000/svg";
+var layer = document.getElementById("clusters");
+
+CLUSTERS.forEach(function (c) {
+  var s = STATUS[c.status];
+  var g = document.createElementNS(svgNS, "g");
+  g.setAttribute("class", "cluster");
+  g.setAttribute("data-name", c.name);
+
+  var halo = document.createElementNS(svgNS, "circle");
+  halo.setAttribute("cx", c.x); halo.setAttribute("cy", c.y);
+  halo.setAttribute("r", bubbleRadius(c.demand) + 14);
+  halo.setAttribute("fill", s.tint);
+  g.appendChild(halo);
+
+  var bubble = document.createElementNS(svgNS, "circle");
+  bubble.setAttribute("class", "bubble");
+  bubble.setAttribute("cx", c.x); bubble.setAttribute("cy", c.y);
+  bubble.setAttribute("r", bubbleRadius(c.demand));
+  bubble.setAttribute("fill", "#ffffff");
+  bubble.setAttribute("stroke", s.fill);
+  bubble.setAttribute("stroke-width", "2.5");
+  g.appendChild(bubble);
+
+  var count = document.createElementNS(svgNS, "text");
+  count.setAttribute("class", "cluster-count");
+  count.setAttribute("x", c.x); count.setAttribute("y", c.y + 4);
+  count.setAttribute("text-anchor", "middle");
+  count.setAttribute("fill", s.fill);
+  count.textContent = c.accounts;
+  g.appendChild(count);
+
+  var label = document.createElementNS(svgNS, "text");
+  label.setAttribute("class", "cluster-label");
+  label.setAttribute("x", c.x);
+  label.setAttribute("y", c.y + bubbleRadius(c.demand) + 18);
+  label.setAttribute("text-anchor", "middle");
+  label.textContent = c.name;
+  g.appendChild(label);
+
+  g.addEventListener("click", function () { select(c.name); });
+  layer.appendChild(g);
+});
+
+function select(name) {
+  var c = CLUSTERS.filter(function (x) { return x.name === name; })[0];
+  if (!c) return;
+  var s = STATUS[c.status];
+  document.querySelectorAll(".cluster").forEach(function (el) {
+    el.classList.toggle("selected", el.getAttribute("data-name") === name);
+  });
+  document.getElementById("d-name").textContent = c.name;
+  document.getElementById("d-postcode").textContent = c.postcode;
+  var chip = document.getElementById("d-status");
+  chip.textContent = s.label;
+  chip.style.background = s.chipBg;
+  chip.style.color = s.chipFg;
+  document.getElementById("d-accounts").textContent = c.accounts;
+  document.getElementById("d-t1").textContent = c.t1Overdue;
+  document.getElementById("d-t1").className = "v" + (c.t1Overdue > 0 ? " alert" : "");
+  document.getElementById("d-t2").textContent = c.t2Overdue;
+  document.getElementById("d-t2").className = "v" + (c.t2Overdue > 0 ? " warn" : "");
+  document.getElementById("d-demand").textContent = c.demand;
+  document.getElementById("d-opp").textContent = c.oppValue;
+  document.getElementById("d-assets").textContent = c.rwAssets;
+}
+
+select(DEFAULT_SELECTED);
+</script>
+</body>
+</html>

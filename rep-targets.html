@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rep targets — John Best</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: transparent; }
+  body {
+    font-family: "Golos Text", "Roboto", "Segoe UI", Arial, sans-serif;
+    color: #33333c;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    padding: 10px;
+  }
+  .widget {
+    background: #ffffff;
+    border: 1px solid #e8e8ed;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(23, 27, 43, .04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .widget-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid #f0f0f4;
+  }
+  .widget-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #33333c;
+    letter-spacing: -.1px;
+  }
+  .widget-subtitle {
+    font-size: 11px;
+    color: #8f8f9b;
+  }
+
+  /* KPI strip */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: #f0f0f4;
+    border-bottom: 1px solid #f0f0f4;
+  }
+  .kpi {
+    background: #ffffff;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .kpi-label {
+    font-size: 10.5px;
+    color: #8f8f9b;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    font-weight: 500;
+  }
+  .kpi-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #33333c;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.3px;
+  }
+  .kpi-value .unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: #8f8f9b;
+    margin-left: 3px;
+  }
+  .kpi-value.gap-red { color: #a32d2d; }
+  .kpi-value.gap-green { color: #2e6b45; }
+
+  /* Matrix */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  thead th {
+    text-align: right;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #8f8f9b;
+    padding: 11px 10px 9px;
+    border-bottom: 1px solid #f0f0f4;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    background: #fafafb;
+  }
+  thead th.first { text-align: left; padding-left: 18px; }
+  thead th.q-current {
+    color: #33333c;
+    background: #eef3fb;
+  }
+  thead th.q-current .now {
+    display: inline-block;
+    font-size: 9px;
+    background: #2c6bb0;
+    color: #ffffff;
+    padding: 1px 5px;
+    border-radius: 6px;
+    margin-left: 4px;
+    letter-spacing: .3px;
+    vertical-align: middle;
+  }
+  tbody td {
+    padding: 11px 10px;
+    border-bottom: 1px solid #f5f5f8;
+    font-size: 13px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: #33333c;
+  }
+  tbody td.category {
+    text-align: left;
+    padding-left: 18px;
+    font-weight: 500;
+    color: #33333c;
+    width: 22%;
+  }
+  tbody td.q-current {
+    background: #f7faff;
+    color: #33333c;
+  }
+  tbody td .sub { color: #8f8f9b; font-size: 11.5px; font-weight: 400; }
+  tbody td .ratio { font-weight: 500; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafafb; }
+  tbody tr:hover td.q-current { background: #eef3fb; }
+  tbody tr.highlight td.q-current {
+    background: #e6efff;
+    font-weight: 600;
+  }
+
+  .badge {
+    display: inline-block;
+    min-width: 40px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .badge.red    { background: #fdecec; color: #a32d2d; }
+  .badge.amber  { background: #fdf3e0; color: #8a5a08; }
+  .badge.grey   { background: #f0f0f4; color: #5f5f6b; }
+  .badge.green  { background: #e9f5ec; color: #2e6b45; }
+
+  .star {
+    display: inline-block;
+    font-size: 10px;
+    color: #c07b12;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  .widget-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 18px 12px;
+    font-size: 11px;
+    color: #8f8f9b;
+    border-top: 1px solid #f0f0f4;
+    background: #fafafb;
+  }
+  .widget-footer .k { display: inline-flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+  <div class="widget">
+    <div class="widget-header">
+      <div class="widget-title">Rep targets — John Best</div>
+      <div class="widget-subtitle">FY 2026 · Northwest territory · units</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi-label">Annual target</span>
+        <span class="kpi-value">70<span class="unit">units</span></span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Won YTD</span>
+        <span class="kpi-value">51<span class="unit">73%</span></span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Forecast FY</span>
+        <span class="kpi-value">65<span class="unit">units</span></span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Remaining gap</span>
+        <span class="kpi-value gap-red">−5<span class="unit">vs target</span></span>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="first">Product category</th>
+          <th>Q1</th>
+          <th>Q2</th>
+          <th class="q-current">Q3<span class="now">NOW</span></th>
+          <th>Q4</th>
+          <th>FY won / target</th>
+          <th>Tier 1 %</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="category">Mini</td>
+          <td>1 <span class="sub">/3</span></td>
+          <td>2 <span class="sub">/3</span></td>
+          <td class="q-current">1 <span class="sub">/3</span></td>
+          <td><span class="sub">fc</span> 1 <span class="sub">/3</span></td>
+          <td><span class="ratio">5 / 12</span></td>
+          <td>40%</td>
+          <td><span class="badge red">−5</span></td>
+        </tr>
+        <tr>
+          <td class="category">Midi</td>
+          <td>2 <span class="sub">/2</span></td>
+          <td>2 <span class="sub">/2</span></td>
+          <td class="q-current">2 <span class="sub">/2</span></td>
+          <td><span class="sub">fc</span> 1 <span class="sub">/2</span></td>
+          <td><span class="ratio">7 / 8</span></td>
+          <td>55%</td>
+          <td><span class="badge grey">0</span></td>
+        </tr>
+        <tr>
+          <td class="category">Excavator</td>
+          <td>3 <span class="sub">/4</span></td>
+          <td>3 <span class="sub">/4</span></td>
+          <td class="q-current">3 <span class="sub">/3</span></td>
+          <td><span class="sub">fc</span> 3 <span class="sub">/3</span></td>
+          <td><span class="ratio">12 / 14</span></td>
+          <td>65%</td>
+          <td><span class="badge green">+1</span></td>
+        </tr>
+        <tr>
+          <td class="category">Wheeled</td>
+          <td>1 <span class="sub">/2</span></td>
+          <td>2 <span class="sub">/1</span></td>
+          <td class="q-current">1 <span class="sub">/1</span></td>
+          <td><span class="sub">fc</span> 1 <span class="sub">/2</span></td>
+          <td><span class="ratio">5 / 6</span></td>
+          <td>50%</td>
+          <td><span class="badge grey">0</span></td>
+        </tr>
+        <tr class="highlight">
+          <td class="category">Loader<span class="star">★ focus</span></td>
+          <td>3 <span class="sub">/3</span></td>
+          <td>3 <span class="sub">/3</span></td>
+          <td class="q-current">3 <span class="sub">/3</span></td>
+          <td><span class="sub">fc</span> 2 <span class="sub">/1</span></td>
+          <td><span class="ratio">9 / 10</span></td>
+          <td>70%</td>
+          <td><span class="badge green">+1</span></td>
+        </tr>
+        <tr>
+          <td class="category">Service Contract</td>
+          <td>4 <span class="sub">/5</span></td>
+          <td>3 <span class="sub">/5</span></td>
+          <td class="q-current">3 <span class="sub">/5</span></td>
+          <td><span class="sub">fc</span> 3 <span class="sub">/5</span></td>
+          <td><span class="ratio">13 / 20</span></td>
+          <td>45%</td>
+          <td><span class="badge amber">−3</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="widget-footer">
+      <span class="k">Cell format: won <span style="color:#8f8f9b">/ target</span>. Q4 shows forecast.</span>
+      <span class="k">Tier 1 % = share of category target expected from Tier 1 accounts</span>
+    </div>
+  </div>
+</body>
+</html>

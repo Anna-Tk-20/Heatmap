@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commission modifier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: transparent; }
+  body {
+    font-family: "Golos Text", "Roboto", "Segoe UI", Arial, sans-serif;
+    color: #33333c;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    padding: 10px;
+  }
+  .widget {
+    background: #ffffff;
+    border: 1px solid #e8e8ed;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(23, 27, 43, .04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .widget-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid #f0f0f4;
+  }
+  .widget-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #33333c;
+  }
+  .widget-subtitle { font-size: 11px; color: #8f8f9b; }
+  .widget-subtitle .exception {
+    display: inline-block;
+    background: #fdecec;
+    color: #a32d2d;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-left: 6px;
+    font-size: 10.5px;
+  }
+
+  .rep-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: #f0f0f4;
+    border-bottom: 1px solid #f0f0f4;
+  }
+  .rep-card {
+    background: #ffffff;
+    padding: 14px 16px;
+    cursor: pointer;
+    border-top: 3px solid transparent;
+    transition: background .12s ease;
+  }
+  .rep-card:hover { background: #fafafb; }
+  .rep-card.selected {
+    background: #f7faff;
+    border-top-color: #2c6bb0;
+  }
+  .rep-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .rep-name { font-size: 13px; font-weight: 600; color: #33333c; }
+  .status-chip {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    letter-spacing: .2px;
+  }
+  .status-chip.red    { background: #fdecec; color: #a32d2d; }
+  .status-chip.amber  { background: #fdf3e0; color: #8a5a08; }
+  .status-chip.green  { background: #e9f5ec; color: #2e6b45; }
+
+  .modifier-value {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.5px;
+    margin: 4px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .modifier-value.red   { color: #a32d2d; }
+  .modifier-value.amber { color: #8a5a08; }
+  .modifier-value.green { color: #2e6b45; }
+  .modifier-label {
+    font-size: 10.5px;
+    color: #8f8f9b;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    margin-bottom: 10px;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 5px; }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 88px 1fr 46px;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .bar-label { color: #6a6a75; }
+  .bar-track {
+    position: relative;
+    height: 6px;
+    background: #f0f0f4;
+    border-radius: 3px;
+  }
+  .bar-track::after {
+    content: "";
+    position: absolute;
+    left: 83.3%;
+    top: -2px; bottom: -2px;
+    width: 1.5px;
+    background: #b8bcc6;
+  }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .bar-fill.red   { background: #d94a45; }
+  .bar-fill.amber { background: #f0a11c; }
+  .bar-fill.green { background: #4caf6e; }
+  .bar-value {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: #33333c;
+  }
+  .bar-value.warn { color: #a32d2d; font-weight: 600; }
+
+  .detail { padding: 16px 18px 18px; }
+  .detail-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .detail-title { font-size: 13px; font-weight: 600; color: #33333c; }
+  .detail-sub { font-size: 11px; color: #8f8f9b; }
+  .detail-narrative {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #444451;
+    margin: 6px 0 12px;
+  }
+  .detail-narrative .up   { color: #2e6b45; font-weight: 600; }
+  .detail-narrative .down { color: #a32d2d; font-weight: 600; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: #f0f0f4;
+    border: 1px solid #f0f0f4;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .metric-cell { background: #ffffff; padding: 8px 10px; }
+  .metric-cell-label {
+    font-size: 10px;
+    color: #8f8f9b;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    margin-bottom: 3px;
+  }
+  .metric-cell-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #33333c;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-cell-delta { font-size: 10.5px; margin-top: 2px; }
+  .metric-cell-delta.up   { color: #2e6b45; }
+  .metric-cell-delta.down { color: #a32d2d; }
+  .metric-cell-delta.flat { color: #8f8f9b; }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fafafb;
+    border: 1px solid #f0f0f4;
+    border-radius: 6px;
+  }
+  .action-text { font-size: 12px; color: #444451; }
+  .action-text b { color: #33333c; font-weight: 600; }
+  .action-btn {
+    background: #2c6bb0;
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-left: 6px;
+  }
+  .action-btn:hover { background: #235690; }
+  .action-btn.secondary {
+    background: #ffffff;
+    color: #2c6bb0;
+    border: 1px solid #cad4e0;
+  }
+  .action-btn.secondary:hover { background: #f2f6fb; }
+</style>
+</head>
+<body>
+  <div class="widget">
+    <div class="widget-header">
+      <div class="widget-title">Commission modifier — activity attainment</div>
+      <div class="widget-subtitle">
+        July 2026 · 3 reps
+        <span class="exception">1 below threshold</span>
+      </div>
+    </div>
+
+    <div class="rep-cards" id="rep-cards"></div>
+
+    <div class="detail">
+      <div class="detail-head">
+        <span class="detail-title" id="d-name">John Best</span>
+        <span class="detail-sub" id="d-sub">Northwest territory · monthly coaching cycle</span>
+      </div>
+      <div class="detail-narrative" id="d-narrative"></div>
+
+      <div class="metrics-grid" id="metrics-grid"></div>
+
+      <div class="action-row">
+        <div class="action-text" id="action-text"></div>
+        <div>
+          <button class="action-btn secondary" onclick="alert('Would open ' + CURRENT.name + ' contact record')">Open contact</button>
+          <button class="action-btn" id="action-btn">Create coaching task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+var REPS = [
+  {
+    key: "john", name: "John Best", status: "amber", statusLabel: "At risk",
+    modifier: 92, modifierPrev: 90,
+    metrics: [
+      { label: "Prospecting",   actual: 8,  target: 10, unit: "visits" },
+      { label: "AM visits",     actual: 18, target: 20, unit: "visits", deltaToday: 1 },
+      { label: "Quotes issued", actual: 9,  target: 12, unit: "quotes", warn: true },
+      { label: "Logged on time",actual: 94, target: 100,unit: "%",     isPct: true }
+    ],
+    narrative: 'Account management visits <span class="up">increased after today\'s visit (+1)</span>, but <span class="down">quotes issued remains below monthly target</span>. Projected modifier: 92% (up from 90% this morning). Category = Amber, Priority = Manager Review.',
+    action: '<b>Suggested action:</b> Issue three qualified quotes this month to lift modifier above the 95% green threshold.',
+    actionLabel: "Create coaching task"
+  },
+  {
+    key: "sarah", name: "Sarah Miller", status: "green", statusLabel: "On track",
+    modifier: 100, modifierPrev: 98,
+    metrics: [
+      { label: "Prospecting",   actual: 11, target: 10, unit: "visits" },
+      { label: "AM visits",     actual: 22, target: 20, unit: "visits" },
+      { label: "Quotes issued", actual: 13, target: 12, unit: "quotes" },
+      { label: "Logged on time",actual: 97, target: 100,unit: "%",     isPct: true }
+    ],
+    narrative: 'All activity metrics <span class="up">at or above target</span>. Modifier locked at the 100% cap for the month. No exception required.',
+    action: '<b>Suggested action:</b> No coaching needed — consider sharing prospecting cadence with the team.',
+    actionLabel: "Share best practice"
+  },
+  {
+    key: "mark", name: "Mark Evans", status: "red", statusLabel: "Below threshold",
+    modifier: 78, modifierPrev: 82,
+    metrics: [
+      { label: "Prospecting",   actual: 5,  target: 10, unit: "visits", warn: true },
+      { label: "AM visits",     actual: 14, target: 20, unit: "visits", warn: true },
+      { label: "Quotes issued", actual: 6,  target: 12, unit: "quotes", warn: true },
+      { label: "Logged on time",actual: 81, target: 100,unit: "%",     isPct: true, warn: true }
+    ],
+    narrative: '<span class="down">All four activity metrics below target.</span> Modifier trending down (82% → 78%). Category = Red, Priority = Manager Review — 1:1 required before month-end.',
+    action: '<b>Suggested action:</b> Schedule immediate 1:1 to review pipeline health, territory coverage, and activity discipline.',
+    actionLabel: "Schedule 1:1"
+  }
+];
+
+var CURRENT = REPS[0];
+
+function attainment(m) { return (m.actual / m.target) * 100; }
+function attainmentClass(pct) {
+  if (pct < 70) return "red";
+  if (pct < 95) return "amber";
+  return "green";
+}
+function barWidth(pct) {
+  var w = Math.min(pct, 120);
+  return (w / 120 * 100).toFixed(1) + "%";
+}
+
+var cardsEl = document.getElementById("rep-cards");
+REPS.forEach(function (r) {
+  var card = document.createElement("div");
+  card.className = "rep-card" + (r === CURRENT ? " selected" : "");
+  card.setAttribute("data-key", r.key);
+
+  var barsHtml = r.metrics.map(function (m) {
+    var pct = attainment(m);
+    var cls = attainmentClass(pct);
+    var valueDisplay = m.isPct ? m.actual + "%" : m.actual + " / " + m.target;
+    var warnCls = m.warn ? " warn" : "";
+    return '<div class="bar-row">' +
+             '<span class="bar-label">' + m.label + '</span>' +
+             '<div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + barWidth(pct) + '"></div></div>' +
+             '<span class="bar-value' + warnCls + '">' + valueDisplay + '</span>' +
+           '</div>';
+  }).join("");
+
+  card.innerHTML =
+    '<div class="rep-card-head">' +
+      '<span class="rep-name">' + r.name + '</span>' +
+      '<span class="status-chip ' + r.status + '">' + r.statusLabel + '</span>' +
+    '</div>' +
+    '<div class="modifier-value ' + r.status + '">' + r.modifier + '%</div>' +
+    '<div class="modifier-label">Projected modifier</div>' +
+    '<div class="bars">' + barsHtml + '</div>';
+
+  card.addEventListener("click", function () { selectRep(r.key); });
+  cardsEl.appendChild(card);
+});
+
+function selectRep(key) {
+  var r = REPS.filter(function (x) { return x.key === key; })[0];
+  if (!r) return;
+  CURRENT = r;
+
+  document.querySelectorAll(".rep-card").forEach(function (el) {
+    el.classList.toggle("selected", el.getAttribute("data-key") === key);
+  });
+
+  document.getElementById("d-name").textContent = r.name;
+  document.getElementById("d-narrative").innerHTML = r.narrative;
+  document.getElementById("action-text").innerHTML = r.action;
+  document.getElementById("action-btn").textContent = r.actionLabel;
+
+  var grid = document.getElementById("metrics-grid");
+  grid.innerHTML = r.metrics.map(function (m) {
+    var pct = attainment(m);
+    var display = m.isPct ? m.actual + "%" : m.actual + " / " + m.target;
+    var delta = "";
+    if (m.deltaToday !== undefined) {
+      delta = '<div class="metric-cell-delta up">+' + m.deltaToday + ' today</div>';
+    } else if (m.warn) {
+      delta = '<div class="metric-cell-delta down">' + Math.round(pct) + '% of target</div>';
+    } else {
+      delta = '<div class="metric-cell-delta flat">' + Math.round(pct) + '% of target</div>';
+    }
+    return '<div class="metric-cell">' +
+             '<div class="metric-cell-label">' + m.label + '</div>' +
+             '<div class="metric-cell-value">' + display + '</div>' +
+             delta +
+           '</div>';
+  }).join("");
+}
+
+selectRep(CURRENT.key);
+</script>
+</body>
+</html>
